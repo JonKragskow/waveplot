@@ -1048,7 +1048,7 @@ def update_spheroid(J, mJ, L, S, n, scale):
         
         a_vals = sievers.compute_a_vals(n, J, mJ, L, S)
         
-        vert, tri, norm = sievers.compute_trisurf(*a_vals)
+        vert, tri, norm = sievers.compute_trisurf(*a_vals, scale)
 
         vert = vert.tolist()
         tri = tri.tolist()

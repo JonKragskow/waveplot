@@ -55,7 +55,7 @@ def tri_normal(vertices: list['Vector']):
 
 
 
-def compute_trisurf(a_2, a_4, a_6):
+def compute_trisurf(a_2, a_4, a_6, scale=2):
 
     # Create angular grid, with values of theta
     phi = np.linspace(0, np.pi, 51)
@@ -63,7 +63,7 @@ def compute_trisurf(a_2, a_4, a_6):
     u, v = np.meshgrid(phi, theta)
     u = u.flatten()
     v = v.flatten()
-    r = sievers_r(v, a_2, a_4, a_6)*2
+    r = sievers_r(v, a_2, a_4, a_6)*scale
 
     #r = walter_r(v, u)
 
