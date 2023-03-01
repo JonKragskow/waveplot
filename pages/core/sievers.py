@@ -24,6 +24,14 @@ from scipy.spatial import Delaunay
 
 from . import utils as ut
 
+def cf_r(theta, phi, n, l, s, j, mj):
+
+    rho = rho(n, j, mj, l, s)
+
+
+    r = 
+
+
 def sievers_r(theta, a_2, a_4, a_6):
 
     c_0 = 3./(4.*np.pi)
@@ -52,8 +60,6 @@ def tri_normal(vertices: list['Vector']):
     vertices[2].normal += n
 
     return n
-
-
 
 def compute_trisurf(a_2, a_4, a_6, scale=2):
 
@@ -237,16 +243,37 @@ def _compute_light_a_val(n, J, mJ, L, S, k):
     return a_k
 
 
-def _compute_heavy_a_val(J, mJ, n, k):
-    a_k = np.sqrt(4*np.pi/(2*k+1))
-    a_k *= (-1)**(J-mJ)
-    a_k *= 7/(np.sqrt(4*np.pi))
-    a_k *= wigner3(J, k, J, -mJ, 0, mJ)/wigner3(J, k, J, -J, 0, J)
-    a_k *= np.sqrt(2*k+1)*wigner3(k, 3, 3, 0, 0, 0)
+def _compute_light_rho_k(n, J, mJ, L, S, k):
+
+    rho_k = (-1)**(2*J-mJ+L+S)
+    rho_k *= 7./(np.sqrt(4*np.pi)) * (2*J + 1) * np.sqrt(2*k+1)
+    rho_k *= wigner6(L, J, S, J, L, k)
+    rho_k *= wigner3(k, 3, 3, 0, 0, 0)
+    summa = 0
+    for it in range(1, n+1):
+        summa += (-1)**it * wigner3(k, 3, 3, 0, (4-it), (it-4))
+    rho_k *= summa
+
+    return rho_k
+
+
+def _compute_heavy_rho_k(n, k):
+
+    rho_k = 7/(np.sqrt(4*np.pi))
+    rho_k *= np.sqrt(2*k+1)*wigner3(k, 3, 3, 0, 0, 0)
     summa = 0
     for it in range(1, n-6):
         summa += (-1)**it * wigner3(k, 3, 3, 0, (4-it), (it-4))
-    a_k *= summa
+    rho_k *= summa
+
+    return    
+
+
+def _compute_heavy_a_val(J, mJ, n, k):
+    a_k = _compute_heavy_rho_k(n, k)
+    a_k *= np.sqrt(4*np.pi/(2*k+1))
+    a_k *= (-1)**(J-mJ)
+    a_k *= wigner3(J, k, J, -mJ, 0, mJ)/wigner3(J, k, J, -J, 0, J)
     return a_k
 
 
