@@ -383,7 +383,7 @@ axis_options = [
                             ),
                             dbc.InputGroupText(
                                 dbc.Checkbox(
-                                    value=True,
+                                    value=False,
                                     id=id("axis_toggle")
                                 )
                             )
@@ -710,7 +710,7 @@ molecule_options = [
                             ),
                             dbc.InputGroupText(
                                 dbc.Checkbox(
-                                    value=True,
+                                    value=False,
                                     id=id("molecule_toggle")
                                 )
                             )
@@ -956,8 +956,8 @@ def update_app(xyz_file, mol_toggle, mol_style, axis_colour, axis_width,
 
     # Create axis cylinder
     axis = ut.make_js_cylinder(
-        start_coords=[0, +axis_length/2., 0],
-        end_coords=[0, -axis_length/2., 0],
+        start_coords=[0, +axis_length / 2., 0],
+        end_coords=[0, -axis_length / 2., 0],
         color=axis_colour,
         width=axis_width,
         viewer_var='viewer'
@@ -1011,23 +1011,23 @@ def update_spheroid(J, mJ, L, S, n, scale):
     if n > 7:
         L = 10
         S = 10
-    
+
     # J half integer, mJ not
     if np.ceil(J) != J:
         if np.ceil(mJ) == mJ:
             invalidity['mJ'] = True
-    
+
     # mJ half integer, J not
     if np.ceil(J) == J:
         if np.ceil(mJ) != mJ:
             invalidity['J'] = True
 
-    for name, qn in zip(["J", "mJ", "L", "S"], [2*J, 2*mJ, L, 2*S]):
+    for name, qn in zip(["J", "mJ", "L", "S"], [2 * J, 2 * mJ, L, 2 * S]):
         if np.ceil(qn) != qn:
             invalidity[name] = True
 
     if n < 7:
-        if J not in np.arange(np.abs(L-S), L + S + 1., 1.):
+        if J not in np.arange(np.abs(L - S), L + S + 1., 1.):
             invalidity["J"] = True
         elif L <= 0:
             invalidity["L"] = True
@@ -1045,11 +1045,10 @@ def update_spheroid(J, mJ, L, S, n, scale):
         invalidity["n"] = True
 
     if not any(invalidity.values()):
-        
-        a_vals = sievers.compute_a_vals(n, J, mJ, L, S)
-        
-        vert, tri, norm = sievers.compute_trisurf(*a_vals, scale)
 
+        # a_vals = sievers.compute_a_vals(n, J, mJ, L, S)
+
+        vert, tri, norm = sievers.cf_density(n, L, S, J, mJ)
         vert = vert.tolist()
         tri = tri.tolist()
         norm = norm.tolist()
@@ -1168,7 +1167,6 @@ clientside_callback(
         viewer.getCanvas().addEventListener("mouseup", (event) => { updateViewText("aniso", viewer) }, false)
         viewer.getCanvas().addEventListener("touchend", (event) => { updateViewText("aniso", viewer) }, false)
 
-        console.log(zoom_level)
         return zoom_level
         }
     """, # noqa
