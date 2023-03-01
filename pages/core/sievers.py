@@ -174,7 +174,8 @@ def _compute_light_a_val(n, J, mJ, L, S, k):
 
 
 def _compute_heavy_a_val(J, mJ, n, k):
-    a_k = _compute_heavy_rho_k(n, k)
+    a_k = 7 / (np.sqrt(4 * np.pi))
+    a_k *= _compute_heavy_rho_k(n, k)
     a_k *= np.sqrt(4 * np.pi / (2 * k + 1))
     a_k *= (-1)**(J - mJ)
     a_k *= wigner3(J, k, J, -mJ, 0, mJ) / wigner3(J, k, J, -J, 0, J)
@@ -209,8 +210,8 @@ def _compute_light_rho_k(n, J, mJ, L, S, k):
 
 def _compute_heavy_rho_k(n, k):
 
-    rho_k = 7 / (np.sqrt(4 * np.pi))
-    rho_k *= np.sqrt(2 * k + 1) * wigner3(k, 3, 3, 0, 0, 0)
+    # rho_k = 7 / (np.sqrt(4 * np.pi))
+    rho_k = np.sqrt(2 * k + 1) * wigner3(k, 3, 3, 0, 0, 0)
     summa = 0
     for it in range(1, n - 6):
         summa += (-1)**it * wigner3(k, 3, 3, 0, (4 - it), (it - 4))
@@ -286,7 +287,7 @@ def cf_density(n, l, s, j, mj):
                 for m1_ind, m1 in enumerate(mj_values):
                     for m2_ind, m2 in enumerate(mj_values):
                         if m2 < m1:
-                            _tmp = np.real(vecs[m1_ind, si] * vecs[m2_ind, si])
+                            _tmp = np.real(np.conj(vecs[m1_ind, si]) * vecs[m2_ind, si])
                             _tmp *= (-1.)**(j - m + q)
                             _tmp *= wigner3(j, k, j, -m1, q, m2)
                             a[kit, qit] += np.sqrt(2) * _tmp
@@ -294,7 +295,7 @@ def cf_density(n, l, s, j, mj):
                 for m1_ind, m1 in enumerate(mj_values):
                     for m2_ind, m2 in enumerate(mj_values):
                         if m2 < m1:
-                            _tmp = np.imag(vecs[m1_ind, si] * vecs[m2_ind, si])
+                            _tmp = np.imag(np.conj(vecs[m1_ind, si]) * vecs[m2_ind, si])
                             _tmp *= (-1.)**(j - m + q)
                             _tmp *= wigner3(j, k, j, -m1, q, m2)
                             a[kit, qit] += np.sqrt(2) * _tmp
@@ -322,9 +323,6 @@ def cf_density(n, l, s, j, mj):
     r = np.real(density) ** (1. /3.)
 
     r *= 5
-
-    print(n/np.sqrt(4 * np.pi))
-    print(a)
 
     # coordinates of sievers surface
     x = r * np.sin(v) * np.cos(u)
