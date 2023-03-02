@@ -58,8 +58,8 @@ def tri_normal(vertices: list['Vector']):
 def compute_trisurf(a_2, a_4, a_6, scale=2):
 
     # Create angular grid, with values of theta
-    phi = np.linspace(0, np.pi, 51)
-    theta = np.linspace(0, 2 * np.pi, 51)
+    phi = np.linspace(0.0001, np.pi, 51)
+    theta = np.linspace(0.0001, 2 * np.pi, 51)
     u, v = np.meshgrid(phi, theta)
     u = u.flatten()
     v = v.flatten()
@@ -174,11 +174,10 @@ def _compute_light_a_val(n, J, mJ, L, S, k):
 
 
 def _compute_heavy_a_val(J, mJ, n, k):
-    a_k = 7 / (np.sqrt(4 * np.pi))
-    a_k *= _compute_heavy_rho_k(n, k)
+    a_k = _compute_heavy_rho_k(n, J, k)
     a_k *= np.sqrt(4 * np.pi / (2 * k + 1))
     a_k *= (-1)**(J - mJ)
-    a_k *= wigner3(J, k, J, -mJ, 0, mJ) / wigner3(J, k, J, -J, 0, J)
+    a_k *= wigner3(J, k, J, -mJ, 0, mJ)
     return a_k
 
 
@@ -187,7 +186,7 @@ def rho(n, J, mJ, L, S, k):
     if n < 7:
         rho = _compute_light_rho_k(n, J, mJ, L, S, k)
     else:
-        rho = _compute_heavy_rho_k(n, k)
+        rho = _compute_heavy_rho_k(n, J, k)
 
     return rho
 
@@ -208,43 +207,33 @@ def _compute_light_rho_k(n, J, mJ, L, S, k):
     return rho_k
 
 
-def _compute_heavy_rho_k(n, k):
+def _compute_heavy_rho_k(n, j, k):
 
-    # rho_k = 7 / (np.sqrt(4 * np.pi))
+    if k == 0:
+        pre = 1
+    else:
+        pre = 0.
+
     rho_k = np.sqrt(2 * k + 1) * wigner3(k, 3, 3, 0, 0, 0)
     summa = 0
     for it in range(1, n - 6):
         summa += (-1)**it * wigner3(k, 3, 3, 0, (4 - it), (it - 4))
     rho_k *= summa
 
+    rho_k += pre
+
+    rho_k *= 7/(np.sqrt(4*np.pi))
+
+    rho_k /= wigner3(j, k, j, -j, 0, j)
+
     return rho_k
 
 
-def compute_CF_coeffs(J):
-
-    cfps = np.loadtxt("cfps.dat")
-    k_max = 6
-
-    _, _, jz, jp, jm, _ = iqme.calc_ang_mom_ops(J)
-
-    stev_ops = iqme.calc_stev_ops(k_max, jp, jm, jz)[1::2]
-
-    hcf, vals, vecs = iqme.calc_HCF(J, cfps, stev_ops, kmax=k_max)
-
-    k_vals = [2, 4, 6]
-    for kit in range(k_max / 2):
-        k = k_vals[kit]
-        for qit in range(2 * k + 1):
-            stev_ops[kit, qit] = la.inv(vecs) @ stev_ops[kit, qit] @ vecs
-
-
-def cf_density(n, l, s, j, mj):
-
-
+def cf_density(n, l, s, j, mj, soi):
 
     # Create angular grid, with values of theta
-    phi = np.linspace(0, np.pi, 51)
-    theta = np.linspace(0, 2 * np.pi, 51)
+    phi = np.linspace(-np.pi/2, np.pi/2, 51)
+    theta = np.linspace(0., 2 * np.pi, 51)
     u, v = np.meshgrid(phi, theta)
     u = u.flatten()
     v = v.flatten()
@@ -253,6 +242,10 @@ def cf_density(n, l, s, j, mj):
         rho(n, j, mj, l, s, k)
         for k in [0, 2, 4, 6]
     ]
+
+    # rho_k[0] = n/np.sqrt(np.pi*4)
+
+    rho_k[0] = 3/(4*np.pi)
 
     cfps = np.loadtxt("cfps.dat")
     k_max = 6
@@ -263,12 +256,7 @@ def cf_density(n, l, s, j, mj):
 
     _, _, vecs = iqme.calc_HCF(j, cfps, stev_ops, k_max=k_max)
 
-    # Change mj ordering to + --> -
-    vecs = np.flip(vecs, axis=1)
-    vecs = np.flip(vecs, axis=0)
-
     # State of interest
-    si = 0
 
     mj_values = np.arange(j, -j - 1, -1)
 
@@ -280,14 +268,15 @@ def cf_density(n, l, s, j, mj):
         for qit, q in enumerate(range(-k, k + 1)):
             if q == 0:
                 for m_ind, m in enumerate(mj_values):
-                    _tmp = np.abs(vecs[m_ind, si])**2
-                    _tmp *= (-1.)**(j - m) * wigner3(j, k, j, -m, 0, m)
+                    _tmp = np.abs(vecs[m_ind, soi])**2
+                    _tmp *= (-1.)**(j - m)
+                    _tmp *= wigner3(j, k, j, -m, 0, m)
                     a[kit, qit] += _tmp
             elif q > 0:
                 for m1_ind, m1 in enumerate(mj_values):
                     for m2_ind, m2 in enumerate(mj_values):
                         if m2 < m1:
-                            _tmp = np.real(np.conj(vecs[m1_ind, si]) * vecs[m2_ind, si])
+                            _tmp = np.real(np.conj(vecs[m1_ind, soi]) * vecs[m2_ind, soi])
                             _tmp *= (-1.)**(j - m + q)
                             _tmp *= wigner3(j, k, j, -m1, q, m2)
                             a[kit, qit] += np.sqrt(2) * _tmp
@@ -295,7 +284,7 @@ def cf_density(n, l, s, j, mj):
                 for m1_ind, m1 in enumerate(mj_values):
                     for m2_ind, m2 in enumerate(mj_values):
                         if m2 < m1:
-                            _tmp = np.imag(np.conj(vecs[m1_ind, si]) * vecs[m2_ind, si])
+                            _tmp = np.imag(np.conj(vecs[m1_ind, soi]) * vecs[m2_ind, soi])
                             _tmp *= (-1.)**(j - m + q)
                             _tmp *= wigner3(j, k, j, -m1, q, m2)
                             a[kit, qit] += np.sqrt(2) * _tmp
@@ -305,15 +294,14 @@ def cf_density(n, l, s, j, mj):
     density = 0.
 
     for kit, k in enumerate([0, 2, 4, 6]):
-        _tmp = 0.
         for qit, q in enumerate(range(-k, k + 1)):
-            if q == 0:
-                _tmp += a[kit, qit] * tess_h(k, q, v, u)
+            if k == 0 and q == 0:
+                density += rho_k[kit]
+            elif q == 0:
+                density += a[kit, qit] * rho_k[kit] * tess_h(k, q, v, u)
             elif q > 0:
-                _tmp += a[kit, qit] * tess_h(k, q, v, u)
-                _tmp += a[kit, -qit - 1] * tess_h(k, -q, v, u)
-
-        density += _tmp * rho_k[kit]
+                density += (a[kit, qit] * rho_k[kit] * tess_h(k, q, v, u))
+                density += (a[kit, qit - 2 * np.abs(q)] * rho_k[kit] * tess_h(k, -q, v, u))
 
     # Points on 2d grid
     points2D = np.vstack([u, v]).T
@@ -322,7 +310,7 @@ def cf_density(n, l, s, j, mj):
     # Radius as cube root of density
     r = np.real(density) ** (1. /3.)
 
-    r *= 5
+    r *= 2
 
     # coordinates of sievers surface
     x = r * np.sin(v) * np.cos(u)

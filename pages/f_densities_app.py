@@ -173,6 +173,27 @@ surface_options = [
                             class_name="mb-3",
                         ),
                     ]),
+                    dbc.Col([
+                        dbc.InputGroup(
+                            children=[
+                                dbc.InputGroupText(
+                                    "State"
+                                ),
+                                dbc.Input(
+                                    id=id('soi'),
+                                    placeholder="1",
+                                    type="number",
+                                    value=1,
+                                    style={
+                                        "textAlign": "center"
+                                    },
+                                    min=1,
+                                    max=20
+                                )
+                            ],
+                            class_name="mb-3",
+                        ),
+                    ]),
                 ],
                 style={"display": "none"}
             )
@@ -831,7 +852,7 @@ def toggle_l_s(n):
     if n == 7:
         raise PreventUpdate
     elif n > 7:
-        on_off = {"display": "none"}
+        on_off = {}
     else:
         on_off = {}
 
@@ -977,6 +998,7 @@ outputs = [
     Output(id("L_value"), "invalid"),
     Output(id("S_value"), "invalid"),
     Output(id("n_value"), "invalid"),
+    Output(id("soi"), "invalid")
 ]
 
 inputs = [
@@ -985,18 +1007,20 @@ inputs = [
     Input(id("L_value"), "value"),
     Input(id("S_value"), "value"),
     Input(id("n_value"), "value"),
-    Input(id("spheroid_scale"), "value")
+    Input(id("spheroid_scale"), "value"),
+    Input(id("soi"), "value")
 ]
 
 
 @callback(outputs, inputs)
-def update_spheroid(J, mJ, L, S, n, scale):
+def update_spheroid(J, mJ, L, S, n, scale, soi):
     invalidity = {
         "J": False,
         "mJ": False,
         "L": False,
         "S": False,
-        "n": False
+        "n": False,
+        "soi": False
     }
 
     vert = no_update
@@ -1044,11 +1068,15 @@ def update_spheroid(J, mJ, L, S, n, scale):
     if n < 1 or n > 13 or n == 7:
         invalidity["n"] = True
 
+    if soi > 2*J+1:
+        invalidity["soi"] = True
+
     if not any(invalidity.values()):
 
         # a_vals = sievers.compute_a_vals(n, J, mJ, L, S)
 
-        vert, tri, norm = sievers.cf_density(n, L, S, J, mJ)
+        vert, tri, norm = sievers.cf_density(n, L, S, J, mJ, soi-1)
+        # vert, tri, norm = sievers.compute_trisurf(*a_vals)
         vert = vert.tolist()
         tri = tri.tolist()
         norm = norm.tolist()
